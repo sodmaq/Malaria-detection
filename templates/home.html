@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Malaria Cell Classifier 🔬</title>
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='images/icon.png') }}"
+      type="image/png"
+    />
+
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- AOS Animation Library -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"
+      rel="stylesheet"
+    />
+
+    <!-- Custom Styles -->
+    <style>
+      :root {
+        --primary-color: #2575fc;
+        --secondary-color: #6a11cb;
+        --accent-color: #ff4c4c;
+        --light-bg: #f4f6f9;
+        --dark-bg: #1a1a2e;
+        --text-light: #ffffff;
+        --text-dark: #333333;
+        --shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      body {
+        background-color: var(--light-bg);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        transition: background-color 0.5s ease;
+        overflow-x: hidden;
+        padding-bottom: 60px;
+      }
+
+      body.dark-mode {
+        background-color: var(--dark-bg);
+        color: var(--text-light);
+      }
+
+      .theme-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .theme-toggle:hover {
+        transform: scale(1.1);
+      }
+
+      .jumbotron {
+        background: linear-gradient(
+          135deg,
+          var(--secondary-color) 0%,
+          var(--primary-color) 100%
+        );
+        color: white;
+        padding: 4rem 1rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        border-radius: 0 0 20px 20px;
+      }
+
+      .dark-mode .jumbotron {
+        background: linear-gradient(135deg, #3a1757 0%, #1a4b8c 100%);
+      }
+
+      .jumbotron::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          rgba(255, 255, 255, 0.1) 8%,
+          transparent 8%
+        );
+        background-position: 0 0;
+        background-size: 20px 20px;
+        opacity: 0.3;
+        animation: backgroundMove 30s linear infinite;
+      }
+
+      @keyframes backgroundMove {
+        0% {
+          background-position: 0 0;
+        }
+        100% {
+          background-position: 500px 500px;
+        }
+      }
+
+      .floating-image {
+        animation: float 6s ease-in-out infinite;
+        filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+        transition: transform 0.3s ease;
+      }
+
+      .floating-image:hover {
+        transform: scale(1.1) rotate(5deg);
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-15px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+
+      .app-title {
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        position: relative;
+        margin-bottom: 1.5rem;
+      }
+
+      .app-title::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 4px;
+        background: var(--accent-color);
+        border-radius: 2px;
+      }
+
+      .upload-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2.5rem;
+        background-color: white;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        transform: translateY(-30px);
+        transition: all 0.3s ease;
+      }
+
+      .dark-mode .upload-container {
+        background-color: #2a2a3e;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .upload-container:hover {
+        transform: translateY(-35px) scale(1.02);
+      }
+
+      .file-upload {
+        border: 2px dashed #6c757d;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .dark-mode .file-upload {
+        border-color: #8a8a9a;
+        background-color: #252538;
+      }
+
+      .file-upload:hover {
+        background-color: #f8f9fa;
+        border-color: var(--primary-color);
+      }
+
+      .dark-mode .file-upload:hover {
+        background-color: #31314a;
+      }
+
+      .file-upload .upload-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+      }
+
+      .file-upload:hover .upload-icon {
+        transform: scale(1.1);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .file-upload input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .upload-text h4 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .btn-submit {
+        background: linear-gradient(
+          135deg,
+          var(--secondary-color) 0%,
+          var(--primary-color) 100%
+        );
+        border: none;
+        padding: 12px 30px;
+        border-radius: 30px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 15px rgba(37, 117, 252, 0.4);
+        transition: all 0.3s ease;
+      }
+
+      .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(37, 117, 252, 0.6);
+      }
+
+      .btn-submit:active {
+        transform: translateY(1px);
+      }
+
+      .dark-mode .btn-submit {
+        box-shadow: 0 4px 15px rgba(37, 117, 252, 0.2);
+      }
+
+      .file-info {
+        display: none;
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background-color: #e9f7fe;
+        border-radius: 8px;
+        border-left: 4px solid var(--primary-color);
+        transition: all 0.3s ease;
+      }
+
+      .dark-mode .file-info {
+        background-color: #2c2c44;
+        border-left: 4px solid var(--primary-color);
+      }
+
+      .file-name {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.25rem;
+      }
+
+      .dark-mode .file-name {
+        color: #7ba7ff;
+      }
+
+      .file-size {
+        font-size: 0.875rem;
+        color: #6c757d;
+      }
+
+      .dark-mode .file-size {
+        color: #b0b0c0;
+      }
+
+      .loading-indicator {
+        display: none;
+        text-align: center;
+        margin-top: 1rem;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(37, 117, 252, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid var(--primary-color);
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .features-section {
+        padding: 3rem 0;
+      }
+
+      .feature-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        height: 100%;
+      }
+
+      .dark-mode .feature-card {
+        background-color: #2a2a3e;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-10px);
+      }
+
+      .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+        background: linear-gradient(
+          135deg,
+          var(--secondary-color) 0%,
+          var(--primary-color) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .feature-title {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        position: relative;
+        padding-bottom: 0.75rem;
+      }
+
+      .feature-title::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(
+          to right,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border-radius: 2px;
+      }
+
+      footer {
+        background: linear-gradient(
+          135deg,
+          var(--secondary-color) 0%,
+          var(--primary-color) 100%
+        );
+        color: white;
+        padding: 1.5rem 0;
+        border-radius: 20px 20px 0 0;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .dark-mode footer {
+        background: linear-gradient(135deg, #3a1757 0%, #1a4b8c 100%);
+      }
+
+      .footer-heart {
+        color: var(--accent-color);
+        font-size: 1.2rem;
+        animation: heartbeat 1.5s infinite;
+      }
+
+      @keyframes heartbeat {
+        0% {
+          transform: scale(1);
+        }
+        25% {
+          transform: scale(1.1);
+        }
+        50% {
+          transform: scale(1);
+        }
+        75% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .social-links a {
+        color: white;
+        margin: 0 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .social-links a:hover {
+        transform: translateY(-3px);
+        opacity: 0.8;
+      }
+
+      .section-title {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 2rem;
+        font-weight: 700;
+      }
+
+      .section-title::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(
+          to right,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border-radius: 2px;
+      }
+
+      .dark-mode .text-muted {
+        color: #a0a0b0 !important;
+      }
+
+      .preview-image {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 8px;
+        display: none;
+        margin: 1rem auto;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .dark-mode .preview-image {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      }
+
+      /* Cell Animation */
+      .cell-animation {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        pointer-events: none;
+        opacity: 0.7;
+        z-index: 0;
+      }
+
+      .cell-red {
+        background-color: rgba(255, 76, 76, 0.7);
+      }
+
+      .cell-green {
+        background-color: rgba(76, 217, 100, 0.7);
+      }
+
+      @media (max-width: 768px) {
+        .jumbotron {
+          padding: 2rem 1rem;
+        }
+
+        .upload-container {
+          padding: 1.5rem;
+        }
+
+        .file-upload {
+          padding: 20px;
+        }
+
+        .app-title {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Theme Toggle Button -->
+    <button
+      class="theme-toggle"
+      id="themeToggle"
+      aria-label="Toggle dark/light mode"
+    >
+      <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="jumbotron text-center">
+      <div class="container">
+        <h3 class="display-4 mb-4 app-title" data-aos="fade-down">
+          Machine Learning Models for Disease Prediction: A Case Study on
+          Malaria and Typhoid Diagnosis
+        </h3>
+        <img
+          src="{{url_for('static', filename='disease.png')}}"
+          alt="Malaria Visualization"
+          width="150"
+          height="150"
+          class="mb-4 floating-image"
+          data-aos="zoom-in"
+        />
+
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <p class="lead" data-aos="fade-up" data-aos-delay="200">
+              Malaria is a life-threatening mosquito-borne infectious disease.
+              This web application leverages Tensorflow and advanced image
+              processing to detect and classify malarial cells with high
+              accuracy.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="upload-container" data-aos="fade-up" data-aos-delay="300">
+        <form
+          action="/result"
+          method="POST"
+          enctype="multipart/form-data"
+          id="uploadForm"
+        >
+          <div class="file-upload" id="dropZone">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div class="upload-text">
+              <h4>Drag & Drop Cell Image Here</h4>
+              <p class="text-muted">or click to browse files</p>
+            </div>
+            <input
+              type="file"
+              id="fileInput"
+              class="form-control"
+              name="pic"
+              accept="image/*"
+              required
+              aria-label="Upload cell image"
+            />
+          </div>
+
+          <img id="imagePreview" class="preview-image" alt="Image preview" />
+
+          <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName">filename.jpg</div>
+            <div class="file-size" id="fileSize">0 KB</div>
+          </div>
+
+          <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-submit btn-lg">
+              <i class="fas fa-microscope me-2"></i> Diagonise Now
+            </button>
+          </div>
+
+          <div class="loading-indicator" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p class="mt-3 text-muted">Analyzing image...</p>
+          </div>
+        </form>
+      </div>
+
+      <div class="features-section">
+        <h2 class="section-title" data-aos="fade-right">How It Works</h2>
+        <div class="row g-4">
+          <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fas fa-upload"></i>
+              </div>
+              <h3 class="feature-title">Upload</h3>
+              <p>Upload your image in common formats like JPEG, PNG, or GIF.</p>
+            </div>
+          </div>
+          <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fas fa-brain"></i>
+              </div>
+              <h3 class="feature-title">Process</h3>
+              <p>
+                Our deep learning model analyzes the cell morphology using
+                advanced neural networks.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fas fa-chart-pie"></i>
+              </div>
+              <h3 class="feature-title">Results</h3>
+              <p>
+                Get instant classification results with confidence scores and
+                visual explanations.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center py-4 mt-4">
+      <div class="container">
+        <p class="mb-2">
+          Made with <span class="footer-heart">❤</span> by
+          <a
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-white fw-bold"
+          >
+            Adeoye Maroof
+          </a>
+        </p>
+        <div class="social-links">
+          <a href="#" target="_blank" aria-label="Github"
+            ><i class="fab fa-github"></i
+          ></a>
+          <a href="#" target="_blank" aria-label="Twitter"
+            ><i class="fab fa-twitter"></i
+          ></a>
+          <a href="#" target="_blank" aria-label="LinkedIn"
+            ><i class="fab fa-linkedin"></i
+          ></a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- AOS Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script>
+      // Initialize AOS animation library
+      document.addEventListener("DOMContentLoaded", function () {
+        AOS.init({
+          duration: 800,
+          easing: "ease-in-out",
+          once: true,
+        });
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById("themeToggle");
+        const toggleIcon = themeToggle.querySelector("i");
+
+        themeToggle.addEventListener("click", function () {
+          document.body.classList.toggle("dark-mode");
+
+          if (document.body.classList.contains("dark-mode")) {
+            toggleIcon.classList.remove("fa-moon");
+            toggleIcon.classList.add("fa-sun");
+            localStorage.setItem("theme", "dark");
+          } else {
+            toggleIcon.classList.remove("fa-sun");
+            toggleIcon.classList.add("fa-moon");
+            localStorage.setItem("theme", "light");
+          }
+        });
+
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+          document.body.classList.add("dark-mode");
+          toggleIcon.classList.remove("fa-moon");
+          toggleIcon.classList.add("fa-sun");
+        }
+
+        // File upload handling
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
+        const fileName = document.getElementById("fileName");
+        const fileSize = document.getElementById("fileSize");
+        const fileInfo = document.getElementById("fileInfo");
+        const imagePreview = document.getElementById("imagePreview");
+        const loadingIndicator = document.getElementById("loadingIndicator");
+        const uploadForm = document.getElementById("uploadForm");
+
+        // Drag and drop functionality
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+          dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+          dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+          dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+          dropZone.classList.add("bg-light");
+        }
+
+        function unhighlight() {
+          dropZone.classList.remove("bg-light");
+        }
+
+        dropZone.addEventListener("drop", handleDrop, false);
+
+        function handleDrop(e) {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+
+          if (files.length) {
+            fileInput.files = files;
+            updateFileInfo(files[0]);
+          }
+        }
+
+        fileInput.addEventListener("change", function () {
+          if (this.files.length) {
+            updateFileInfo(this.files[0]);
+          }
+        });
+
+        function updateFileInfo(file) {
+          // Display file info
+          fileName.textContent = file.name;
+
+          // Format file size
+          const fileSizeKB = file.size / 1024;
+          let fileSizeStr;
+
+          if (fileSizeKB < 1024) {
+            fileSizeStr = fileSizeKB.toFixed(2) + " KB";
+          } else {
+            fileSizeStr = (fileSizeKB / 1024).toFixed(2) + " MB";
+          }
+
+          fileSize.textContent = fileSizeStr;
+          fileInfo.style.display = "block";
+
+          // Show image preview
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = "block";
+
+            // Add a little animation to the preview image
+            imagePreview.style.opacity = "0";
+            setTimeout(() => {
+              imagePreview.style.transition = "opacity 0.5s ease";
+              imagePreview.style.opacity = "1";
+            }, 100);
+          };
+          reader.readAsDataURL(file);
+        }
+
+        // Form submission
+        uploadForm.addEventListener("submit", function (e) {
+          // Show loading indicator
+          loadingIndicator.style.display = "block";
+        });
+
+        // Floating cell animation
+        function createCells() {
+          const jumbotron = document.querySelector(".jumbotron");
+          const numCells = 15;
+
+          for (let i = 0; i < numCells; i++) {
+            setTimeout(() => {
+              const cell = document.createElement("div");
+              cell.classList.add("cell-animation");
+
+              // Randomly choose between red and green cells
+              if (Math.random() > 0.5) {
+                cell.classList.add("cell-red");
+              } else {
+                cell.classList.add("cell-green");
+              }
+
+              // Random position within the jumbotron
+              const xPos = Math.random() * 100;
+              const yPos = Math.random() * 100;
+
+              cell.style.left = `${xPos}%`;
+              cell.style.top = `${yPos}%`;
+
+              // Random size between 10px and 30px
+              const size = 10 + Math.random() * 20;
+              cell.style.width = `${size}px`;
+              cell.style.height = `${size}px`;
+
+              // Add animation
+              cell.style.transition = "all 15s linear";
+
+              jumbotron.appendChild(cell);
+
+              // Start movement
+              setTimeout(() => {
+                const newXPos = Math.random() * 100;
+                const newYPos = Math.random() * 100;
+                cell.style.left = `${newXPos}%`;
+                cell.style.top = `${newYPos}%`;
+                cell.style.opacity = "0";
+              }, 100);
+
+              // Remove after animation completes
+              setTimeout(() => {
+                cell.remove();
+              }, 15000);
+            }, i * 1000);
+          }
+        }
+
+        // Create initial cells and then periodically create more
+        createCells();
+        setInterval(createCells, 15000);
+      });
+    </script>
+  </body>
+</html>
